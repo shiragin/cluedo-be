@@ -19,7 +19,10 @@ interface Room {
   maxPlayers: number;
 }
 
-const rooms: Array<Room> = [];
+const rooms: Array<Room> = [
+  { name: "room1", maxPlayers: 4, id: "1", players: ["1", "2", "3"] },
+  { name: "room2", maxPlayers: 3, id: "2", players: ["5", "6"] },
+];
 
 io.on("connection", (socket: Socket): void => {
   console.log("New user");
