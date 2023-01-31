@@ -12,14 +12,18 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket: Socket) => {
-  console.log("a user connected");
-});
+io.on("connection", (socket: Socket): void => {
+  console.log("New user");
 
-// io.on("addUser", (socket: Socket) => {
-//   console.log("joined");
-//   io.emit("addUser", "You join room");
-// });
+  // socket.on("join_room", (data) => {
+  //   socket.join(data);
+  // });
+
+  socket.on("add_user", (data) => {
+    console.log(data.name);
+    socket.emit("user_added", "Welcome " + data.name);
+  });
+});
 
 async function init() {
   const connection = await mongoose
