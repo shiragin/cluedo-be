@@ -14,14 +14,14 @@ const io = new Server(server, {
 
 interface Room {
   name: string;
-  id: string;
+  roomId: string;
   players: Array<string>;
   maxPlayers: number;
 }
 
 const rooms: Array<Room> = [
-  { name: "room1", maxPlayers: 4, id: "1", players: ["1", "2", "3"] },
-  { name: "room2", maxPlayers: 3, id: "2", players: ["5", "6"] },
+  { name: "room1", maxPlayers: 4, roomId: "1", players: ["1", "2", "3"] },
+  { name: "room2", maxPlayers: 3, roomId: "2", players: ["5", "6"] },
 ];
 
 io.on("connection", (socket: Socket): void => {
@@ -31,6 +31,7 @@ io.on("connection", (socket: Socket): void => {
   socket.on("add_user", (data): void => {
     console.log(data.name);
     socket.emit("user_added", "Welcome " + data.name);
+    //Add user to DB SHIRA
   });
 
   socket.on("choose_room", (): void => {
@@ -38,7 +39,7 @@ io.on("connection", (socket: Socket): void => {
   });
 
   socket.on("join_room", (roomId: string): void => {
-    const roomToJoin = rooms.find((r) => r.id == roomId);
+    const roomToJoin = rooms.find((r) => r.roomId == roomId);
     if (!roomToJoin) {
       socket.emit("error", "Room not found");
       return;
@@ -50,11 +51,12 @@ io.on("connection", (socket: Socket): void => {
 
   socket.on("create_room", (room: Room): void => {
     rooms.push(room);
-    socket.join(room.id);
+    socket.join(room.roomId);
   });
 
   socket.on("game_started", (data: any): void => {
-    console.log(data);
+    //Prepare the game data
+    //emit.game_data(sending the game data)
   });
 });
 
