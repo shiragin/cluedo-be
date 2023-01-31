@@ -32,7 +32,8 @@ io.on('connection', (socket: Socket): void => {
   socket.on('add_user', (data: { name: string }): void => {
     createUser(socket.id, data.name).then((res) => {
       if (res) {
-        socket.emit('user_added', res);
+        const { socketId, nickname, _id } = res;
+        socket.emit('user_added', { socketId, nickname, id: _id });
       }
     });
   });
