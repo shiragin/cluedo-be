@@ -6,6 +6,9 @@ export function createRoomModel(NewRoomData: Object) {
 export function getAllRoomsModel() {
   return Room.find();
 }
+export function getRoombyIdModel(id: string) {
+  return Room.findOne({ roomId: id });
+}
 
 export function addPlayerModel(
   roomId: string,

@@ -6,6 +6,7 @@ import {
   addPlayer,
   createRoom,
   getAllRooms,
+  getRoombyId,
 } from './controllers/roomsController';
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -124,8 +125,13 @@ io.on('connection', (socket: Socket): void => {
   });
 
   socket.on('start_game', (roomid: string): void => {
-    socket.emit('game_started');
-    socket.to(roomid).emit('game_started');
+    console.log(roomid);
+    getRoombyId(roomid).then((res) => {
+      if (res) {
+        socket.emit('game_started', res);
+        socket.to(roomid).emit('game_started', res);
+      }
+    });
   });
 
   //   socket.on('player_left', (data: { room: Room; user: User }): void => {

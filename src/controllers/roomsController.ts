@@ -1,5 +1,10 @@
-import { createRoomModel, getAllRoomsModel } from '../models/roomsModel';
-import { addPlayerModel, removePlayerModel } from '../models/roomsModel';
+import {
+  createRoomModel,
+  getAllRoomsModel,
+  getRoombyIdModel,
+  addPlayerModel,
+  removePlayerModel,
+} from '../models/roomsModel';
 
 export async function createRoom(NewRoomData: Object) {
   try {
@@ -39,5 +44,15 @@ export async function removePlayer(roomId: string, playerId: string) {
     if (updatedRoom) return updatedRoom;
   } catch (error) {
     console.error(error);
+  }
+}
+
+export async function getRoombyId(roomid: string) {
+  try {
+    const room = await getRoombyIdModel(roomid);
+    console.log(room);
+    if (room) return room;
+  } catch (err) {
+    console.error(err);
   }
 }
