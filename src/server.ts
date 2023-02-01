@@ -57,7 +57,7 @@ io.on("connection", (socket: Socket): void => {
   });
 
   socket.on(
-    "join_room",
+    "joinroom",
     (data: {
       roomId: string;
       user: { socketId: string; nickname: string; id: string };
@@ -126,15 +126,9 @@ io.on("connection", (socket: Socket): void => {
       const filteredRoom = room.players.filter(
         (player) => player.playerId !== user.id
       );
-      removePlayer(room.roomId, filteredRoom);
-
-      // rooms[
-      //   rooms.findIndex((room) =>
-      //     room.players.find((p) => p.playerId === user.socketId)
-      //   )
-      // ].players = filteredRoom;
-
-      socket.to(room.roomId).emit("player_quit", `${user.nickname} left`);
+      removePlayer(room.roomId, filteredRoom).then((res) => {
+        socket.to(room.roomId).emit("player_quit", res);
+      });
     }
   );
 

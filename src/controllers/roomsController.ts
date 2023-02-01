@@ -1,4 +1,4 @@
-import Room, {IRoom} from "../schemas/roomSchema";
+import Room, { IRoom } from "../schemas/roomSchema";
 import {
   createRoomModel,
   getAllRoomsModel,
@@ -39,7 +39,6 @@ export async function addPlayer(
   }
 }
 
-
 export async function updateRoom(newRoom: IRoom) {
   try {
     const newGame = await updateRoomModel(newRoom);
@@ -53,6 +52,7 @@ export async function updateRoom(newRoom: IRoom) {
 export async function removePlayer(roomId: string, filteredRoom: object[]) {
   try {
     const updatedRoom = await removePlayerModel(roomId, filteredRoom);
+    console.log(updatedRoom);
     if (updatedRoom) return updatedRoom;
   } catch (error) {
     console.error(error);
@@ -77,7 +77,4 @@ export async function getRoombyId(roomid: string) {
   }
 }
 
-export async function nextRound(room: string, ){
-
-
-}
+export async function nextRound(room: string) {}
