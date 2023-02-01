@@ -77,7 +77,24 @@ io.on("connection", (socket: Socket): void => {
         socket.emit("error", "Room not found");
         return;
       }
-      // if (res?.players.length < res?.maxPlayers) {
+    })
+  });
+
+
+  socket.on("create_room", (data: {newRoom: Room, userId: string}): void => {
+    console.log("HERE")
+    const {newRoom, userId} = data;
+    console.log("room",newRoom);
+    createRoom(newRoom).then((res) => {
+      console.log("res", res)
+      // socket.join(room.roomId);
+      // socket.emit("enter_queue", res);
+    });
+    // console.log(room);
+  
+    // rooms.push(room);
+  });
+  // if (res?.players.length < res?.maxPlayers) {
       //   socket.join(roomId);
       //   res.players.push({
       //     playerId: user.socketId,
@@ -98,20 +115,6 @@ io.on("connection", (socket: Socket): void => {
     //   socket.emit("error", "Room not found");
     //   return;
     // }
-  });
-
-  socket.on("create_room", (data: {room: Room, userId: string}): void => {
-    console.log("HERE")
-    const {room, userId} = data;
-    createRoom(room).then((res) => {
-
-      socket.join(room.roomId);
-      socket.emit("enter_queue", res);
-    });
-    // console.log(room);
-  
-    // rooms.push(room);
-  });
 
 
   socket.on("game_started", (data: any): void => {
@@ -154,7 +157,7 @@ io.on("connection", (socket: Socket): void => {
 
     socket.to(room.roomId).emit("player_quit", `${user.nickname} left`);
   });
-})});
+});
 
 async function init(): Promise<void> {
   const connection = await mongoose
