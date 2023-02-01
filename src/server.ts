@@ -1,14 +1,17 @@
-import {Socket, Server} from "socket.io";
-import express from "express";
-import http from "http";
-import {createUser} from "./controllers/usersController";
+
+import { Socket, Server } from 'socket.io';
+import express from 'express';
+import http from 'http';
+import { IRoom } from './schemas/roomSchema';
+import { createUser } from './controllers/usersController';
 import {
   addPlayer,
   createRoom,
   getAllRooms,
   getRoombyId,
   removePlayer,
-} from "./controllers/roomsController";
+  updateRoom
+  } from "./controllers/roomsController";
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = express();
@@ -26,37 +29,18 @@ interface User {
   _id: string;
 }
 
-interface Room {
-  name: string;
-  roomId: string;
-  players: {
-    playerId: string;
-    playerNickname: string;
-  }[];
-  maxPlayers: number;
-  ready: string[];
-}
 
-const rooms: Array<Room> = [
-  {
-    name: "room1",
-    maxPlayers: 4,
-    roomId: "1",
-    players: [
-      {playerId: "1", playerNickname: "Shira"},
-      {playerId: "2", playerNickname: "Nadav"},
-      {playerId: "3", playerNickname: "Odeya"},
-    ],
-    ready: ["1", "2", "3"],
-  },
-  {
-    name: "room2",
-    maxPlayers: 3,
-    roomId: "2",
-    players: [{playerId: "1", playerNickname: "Shira"}],
-    ready: [],
-  },
-];
+// interface Room {
+//   name: string;
+//   roomId: string;
+//   players: {
+//     playerId: string;
+//     playerNickname: string;
+//   }[];
+//   maxPlayers: number;
+//   ready: string[];
+// }
+
 
 io.on("connection", (socket: Socket): void => {
   socket.on("add_user", (data: {name: string}): void => {
@@ -111,16 +95,15 @@ io.on("connection", (socket: Socket): void => {
   });
 
   socket.on(
-    "ask",
-    (data: {selectedCards: Array<string>; currentRoom: Room}): void => {
-      const {selectedCards, currentRoom} = data;
-      console.log(selectedCards);
-      socket.to(currentRoom.roomId).emit("asked_cards", selectedCards);
+    'ask',
+    (data: { selectedCards: Array<string>; currentRoom: IRoom }): void => {
+      const { selectedCards, currentRoom } = data;
+      socket.to(currentRoom.roomId).emit('asked_cards', selectedCards);
     }
   );
 
-  socket.on("ready", (data: {user: User; currentRoom: Room}): void => {
-    socket.to(data.currentRoom.roomId).emit("player_ready", data.user.socketId);
+  socket.on('ready', (data: { user: User; currentRoom: IRoom }): void => {
+    socket.to(data.currentRoom.roomId).emit('player_ready', data.user.socketId);
 
     //if all players ready
   });
@@ -141,12 +124,9 @@ io.on("connection", (socket: Socket): void => {
       user: {socketId: string; nickname: string; id: string};
     }): void => {
       const {room, user} = data;
-      console.log("USERRRRRR", user);
-      console.log("ROOOOOMM", room.players);
       const filteredRoom = room.players.filter(
         (player) => player.playerId !== user.id
       );
-      console.log("FILTERRRRR", filteredRoom);
       removePlayer(room.roomId, filteredRoom);
 
       // rooms[

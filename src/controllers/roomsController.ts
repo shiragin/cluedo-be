@@ -39,6 +39,17 @@ export async function addPlayer(
   }
 }
 
+
+export async function updateRoom(newRoom: IRoom) {
+  try {
+    const newGame = await updateRoomModel(newRoom);
+    console.log(newGame);
+    if (newGame) return newGame;
+  } catch (err: any) {
+    console.log(err.message);
+  }
+}
+
 export async function removePlayer(roomId: string, filteredRoom: object[]) {
   try {
     const updatedRoom = await removePlayerModel(roomId, filteredRoom);
