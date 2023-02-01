@@ -2,6 +2,7 @@ import { Socket, Server } from "socket.io";
 import express from "express";
 import http from "http";
 import { createUser } from "./controllers/usersController";
+import { createPlayer } from "./controllers/roomsController";
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = express();
@@ -12,6 +13,12 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+
+interface User {
+  nickname: string;
+  socketId: string;
+  _id: string;
+}
 
 interface Room {
   name: string;
@@ -38,10 +45,7 @@ const rooms: Array<Room> = [
     name: "room2",
     maxPlayers: 3,
     roomId: "2",
-    players: [
-      { playerId: "1", playerNickname: "Shira" },
-      { playerId: "2", playerNickname: "Shay" },
-    ],
+    players: [{ playerId: "1", playerNickname: "Shira" }],
   },
 ];
 
@@ -72,6 +76,9 @@ io.on("connection", (socket: Socket): void => {
         playerId: user.socketId,
         playerNickname: user.nickname,
       });
+      socket
+        .to(roomToJoin.roomId)
+        .emit("player_joined", `${user.nickname} joined`);
       console.log(roomToJoin);
       console.log("Joined room number", roomId);
       // socket.emit('get_rooms', rooms);
@@ -92,25 +99,33 @@ io.on("connection", (socket: Socket): void => {
     //emit.game_data(sending the game data)
   });
 
-  socket.on("ask", (cards: Array<string>): void => {
-    console.log(cards);
-
-    socket.to(rooms[0].roomId).emit("asked_cards", cards);
-  });
+  socket.on(
+    "ask",
+    (data: { selectedCards: Array<string>; currentRoom: Room }): void => {
+      const { selectedCards, currentRoom } = data;
+      console.log(selectedCards);
+      socket.to(currentRoom.roomId).emit("asked_cards", selectedCards);
+    }
+  );
 
   socket.on("ready", (): void => {
-    console.log(socket.id);
+    console.log("Ready!");
   });
 
-  socket.on("player_left", (): void => {
-    const roomToLeave = rooms.find((r) =>
-      r.players.find((player) => player.playerId === socket.id)
+  socket.on("player_left", (data: { room: Room; user: User }): void => {
+    const { room, user } = data;
+    console.log(user.socketId);
+    const filteredRoom = room.players.filter(
+      (player) => player.playerId !== user.socketId
     );
-    console.log(roomToLeave);
-    if (roomToLeave) {
-      socket.leave(roomToLeave.roomId);
-      socket.to(roomToLeave.roomId).emit("player_quit", "Player left");
-    }
+
+    rooms[
+      rooms.findIndex((room) =>
+        room.players.find((p) => p.playerId === user.socketId)
+      )
+    ].players = filteredRoom;
+
+    socket.to(room.roomId).emit("player_quit", `${user.nickname} left`);
   });
 });
 
