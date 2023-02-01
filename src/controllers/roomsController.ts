@@ -76,3 +76,8 @@ export async function getRoombyId(roomid: string) {
     console.error(err);
   }
 }
+
+export async function nextRound(room: string, ){
+
+
+}

@@ -1,17 +1,17 @@
-
-import { Socket, Server } from 'socket.io';
-import express from 'express';
-import http from 'http';
-import { IRoom } from './schemas/roomSchema';
-import { createUser } from './controllers/usersController';
+import { Socket, Server } from "socket.io";
+import express from "express";
+import http from "http";
+import { IRoom } from "./schemas/roomSchema";
+import { createUser } from "./controllers/usersController";
 import {
   addPlayer,
   createRoom,
   getAllRooms,
   getRoombyId,
   removePlayer,
-  updateRoom
-  } from "./controllers/roomsController";
+  updateRoom,
+  nextRound,
+} from "./controllers/roomsController";
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = express();
@@ -29,7 +29,6 @@ interface User {
   _id: string;
 }
 
-
 // interface Room {
 //   name: string;
 //   roomId: string;
@@ -41,13 +40,12 @@ interface User {
 //   ready: string[];
 // }
 
-
 io.on("connection", (socket: Socket): void => {
-  socket.on("add_user", (data: {name: string}): void => {
+  socket.on("add_user", (data: { name: string }): void => {
     createUser(socket.id, data.name).then((res) => {
       if (res) {
-        const {socketId, nickname, _id} = res;
-        socket.emit("user_added", {socketId, nickname, id: _id});
+        const { socketId, nickname, _id } = res;
+        socket.emit("user_added", { socketId, nickname, id: _id });
       }
     });
   });
@@ -62,13 +60,14 @@ io.on("connection", (socket: Socket): void => {
     "join_room",
     (data: {
       roomId: string;
-      user: {socketId: string; nickname: string; id: string};
+      user: { socketId: string; nickname: string; id: string };
     }): void => {
-      const {roomId, user} = data;
+      const { roomId, user } = data;
       getRoombyId(roomId).then((room) => {
         if (room!.players.length < room!.maxPlayers) {
           addPlayer(roomId, user.id, user.nickname).then((res) => {
             socket.join(roomId);
+            socket.to(roomId).emit("player_joined", res);
             socket.emit("enter_queue", res);
             if (!res) {
               socket.emit("error", "Room not found");
@@ -95,15 +94,15 @@ io.on("connection", (socket: Socket): void => {
   });
 
   socket.on(
-    'ask',
+    "ask",
     (data: { selectedCards: Array<string>; currentRoom: IRoom }): void => {
       const { selectedCards, currentRoom } = data;
-      socket.to(currentRoom.roomId).emit('asked_cards', selectedCards);
+      socket.to(currentRoom.roomId).emit("asked_cards", selectedCards);
     }
   );
 
-  socket.on('ready', (data: { user: User; currentRoom: IRoom }): void => {
-    socket.to(data.currentRoom.roomId).emit('player_ready', data.user.socketId);
+  socket.on("ready", (data: { user: User; currentRoom: IRoom }): void => {
+    socket.to(data.currentRoom.roomId).emit("player_ready", data.user.socketId);
 
     //if all players ready
   });
@@ -120,10 +119,10 @@ io.on("connection", (socket: Socket): void => {
   socket.on(
     "player_left",
     (data: {
-      room: Room;
-      user: {socketId: string; nickname: string; id: string};
+      room: IRoom;
+      user: { socketId: string; nickname: string; id: string };
     }): void => {
-      const {room, user} = data;
+      const { room, user } = data;
       const filteredRoom = room.players.filter(
         (player) => player.playerId !== user.id
       );
@@ -138,6 +137,18 @@ io.on("connection", (socket: Socket): void => {
       socket.to(room.roomId).emit("player_quit", `${user.nickname} left`);
     }
   );
+
+  socket.on("replied", (answer: { card: string; currentRoom: IRoom }) => {
+    const { card, currentRoom } = answer;
+    socket.to(currentRoom.roomId).emit("Show card", card);
+  });
+
+  socket.on("next_round", (data: { room: IRoom }) => {
+    const { room } = data;
+    const turn = nextRound(room.roomId).then((res) => {
+      console.log(res);
+    });
+  });
 });
 
 async function init(): Promise<void> {
