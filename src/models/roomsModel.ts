@@ -26,10 +26,14 @@ export function addPlayerModel(
 }
 
 export async function updateRoomModel(newRoom: IRoom) {
-  return Room.findOneAndUpdate({ roomId: newRoom.roomId }, newRoom, {
-    new: true,
-    runValidators: true,
-  });
+  try {
+    return Room.findOneAndUpdate({ roomId: newRoom.roomId }, newRoom, {
+      new: true,
+      runValidators: true,
+    });
+  } catch (err: any) {
+    console.log(err.message);
+  }
 }
 
 export function removePlayerModel(roomId: string, playerId: string) {

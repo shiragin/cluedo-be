@@ -4,16 +4,19 @@ import validator from 'validator';
 export interface IRoom extends Document {
   roomId: string;
   name: string;
-  players: [
-    { playerId: string; playerNickname: string; role: string; clues: Clue[] }
-  ];
+  players: {
+    playerId: string;
+    playerNickname: string;
+    role: string;
+    clues: Clue[];
+  }[];
   maxPlayers: number;
 }
 
 export interface Clue {
   id: number;
   name: string;
-  type: string;
+  cardType: string;
   color: string;
   image: string;
 }
@@ -30,8 +33,8 @@ const roomSchema: Schema = new Schema<IRoom>({
       clues: [
         {
           id: Number,
-          type: String,
           name: String,
+          cardType: String,
           color: String,
           image: String,
         },

@@ -1,12 +1,14 @@
 import { Socket, Server } from 'socket.io';
 import express from 'express';
 import http from 'http';
+import { IRoom } from './schemas/roomSchema';
 import { createUser } from './controllers/usersController';
 import {
   addPlayer,
   createRoom,
   getAllRooms,
   getRoombyId,
+  updateRoom,
 } from './controllers/roomsController';
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -25,37 +27,16 @@ interface User {
   _id: string;
 }
 
-interface Room {
-  name: string;
-  roomId: string;
-  players: {
-    playerId: string;
-    playerNickname: string;
-  }[];
-  maxPlayers: number;
-  ready: string[];
-}
-
-const rooms: Array<Room> = [
-  {
-    name: 'room1',
-    maxPlayers: 4,
-    roomId: '1',
-    players: [
-      { playerId: '1', playerNickname: 'Shira' },
-      { playerId: '2', playerNickname: 'Nadav' },
-      { playerId: '3', playerNickname: 'Odeya' },
-    ],
-    ready: ['1', '2', '3'],
-  },
-  {
-    name: 'room2',
-    maxPlayers: 3,
-    roomId: '2',
-    players: [{ playerId: '1', playerNickname: 'Shira' }],
-    ready: [],
-  },
-];
+// interface Room {
+//   name: string;
+//   roomId: string;
+//   players: {
+//     playerId: string;
+//     playerNickname: string;
+//   }[];
+//   maxPlayers: number;
+//   ready: string[];
+// }
 
 io.on('connection', (socket: Socket): void => {
   socket.on('add_user', (data: { name: string }): void => {
@@ -80,8 +61,6 @@ io.on('connection', (socket: Socket): void => {
       user: { socketId: string; nickname: string; id: string };
     }): void => {
       const { roomId, user } = data;
-
-      const roomToJoin = rooms.find((r) => r.roomId == roomId);
       addPlayer(roomId, user.id, user.nickname).then((res) => {
         socket.join(roomId);
         socket.emit('enter_queue', res);
@@ -107,13 +86,13 @@ io.on('connection', (socket: Socket): void => {
 
   socket.on(
     'ask',
-    (data: { selectedCards: Array<string>; currentRoom: Room }): void => {
+    (data: { selectedCards: Array<string>; currentRoom: IRoom }): void => {
       const { selectedCards, currentRoom } = data;
       socket.to(currentRoom.roomId).emit('asked_cards', selectedCards);
     }
   );
 
-  socket.on('ready', (data: { user: User; currentRoom: Room }): void => {
+  socket.on('ready', (data: { user: User; currentRoom: IRoom }): void => {
     socket.to(data.currentRoom.roomId).emit('player_ready', data.user.socketId);
 
     //if all players ready
@@ -128,8 +107,15 @@ io.on('connection', (socket: Socket): void => {
     });
   });
 
-  socket.on('send_clues', (newGame: Room): void => {
-    console.log('Hi');
+  socket.on('send_clues', (newGame: IRoom): void => {
+    console.log('hi');
+    updateRoom(newGame).then((res) => {
+      if (res) {
+        console.log('wowwowowow');
+        socket.emit('clues_sent', res);
+        socket.to(newGame.roomId).emit('clues_sent', res);
+      }
+    });
   });
 
   //   socket.on('player_left', (data: { room: Room; user: User }): void => {
