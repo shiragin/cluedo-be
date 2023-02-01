@@ -72,23 +72,32 @@ io.on('connection', (socket: Socket): void => {
     });
   });
 
-  socket.on('join_room', ({ roomId, user }): void => {
-    console.log(roomId);
-    // const roomToJoin = rooms.find((r) => r.roomId == roomId);
-    addPlayer(roomId, user._id).then((res) => {
-      console.log(res);
-      if (!res) {
-        socket.emit('error', 'Room not found');
-        return;
-      }
-    });
-  });
+  socket.on(
+    'joinroom',
+    (data: {
+      roomId: string;
+      user: { socketId: string; nickname: string; id: string };
+    }): void => {
+      const { roomId, user } = data;
+      console.log('Room', data);
+      console.log('User', user);
+      const roomToJoin = rooms.find((r) => r.roomId == roomId);
+      addPlayer(roomId, user.id, user.nickname).then((res) => {
+        console.log('ppp', res);
+        socket.join(roomId);
+        socket.emit('enter_queue', res);
+        if (!res) {
+          socket.emit('error', 'Room not found');
+          return;
+        }
+      });
+    }
+  );
 
   socket.on('create_room', (newRoom): void => {
     console.log('HERE');
     console.log(newRoom);
     createRoom(newRoom).then((res) => {
-      console.log(res);
       socket.join(newRoom.roomId);
       socket.emit('enter_queue', res);
     });
@@ -119,21 +128,21 @@ io.on('connection', (socket: Socket): void => {
     socket.to(roomid).emit('game_started');
   });
 
-  socket.on('player_left', (data: { room: Room; user: User }): void => {
-    const { room, user } = data;
-    console.log(user.socketId);
-    const filteredRoom = room.players.filter(
-      (player) => player.playerId !== user.socketId
-    );
+  //   socket.on('player_left', (data: { room: Room; user: User }): void => {
+  //     const { room, user } = data;
+  //     console.log(user.socketId);
+  //     const filteredRoom = room.players.filter(
+  //       (player) => player.playerId !== user.id
+  //     );
 
-    rooms[
-      rooms.findIndex((room) =>
-        room.players.find((p) => p.playerId === user.socketId)
-      )
-    ].players = filteredRoom;
+  //     rooms[
+  //       rooms.findIndex((room) =>
+  //         room.players.find((p) => p.playerId === user.socketId)
+  //       )
+  //     ].players = filteredRoom;
 
-    socket.to(room.roomId).emit('player_quit', `${user.nickname} left`);
-  });
+  //     socket.to(room.roomId).emit('player_quit', `${user.nickname} left`);
+  //   });
 });
 
 async function init(): Promise<void> {

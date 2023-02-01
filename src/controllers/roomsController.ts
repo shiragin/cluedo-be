@@ -20,9 +20,13 @@ export async function getAllRooms() {
   }
 }
 
-export async function addPlayer(roomId: string, playerId: string) {
+export async function addPlayer(
+  roomId: string,
+  playerId: string,
+  playerNickname: string
+) {
   try {
-    const updatedRoom = await addPlayerModel(roomId, playerId);
+    const updatedRoom = await addPlayerModel(roomId, playerId, playerNickname);
     if (updatedRoom) return updatedRoom;
   } catch (error) {
     console.error(error);
