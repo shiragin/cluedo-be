@@ -1,21 +1,22 @@
-import { Socket, Server } from 'socket.io';
-import express from 'express';
-import http from 'http';
-import { createUser } from './controllers/usersController';
+import {Socket, Server} from "socket.io";
+import express from "express";
+import http from "http";
+import {createUser} from "./controllers/usersController";
 import {
   addPlayer,
   createRoom,
   getAllRooms,
   getRoombyId,
-} from './controllers/roomsController';
-require('dotenv').config();
-const mongoose = require('mongoose');
+  removePlayer
+} from "./controllers/roomsController";
+require("dotenv").config();
+const mongoose = require("mongoose");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
   },
 });
 
@@ -38,124 +39,133 @@ interface Room {
 
 const rooms: Array<Room> = [
   {
-    name: 'room1',
+    name: "room1",
     maxPlayers: 4,
-    roomId: '1',
+    roomId: "1",
     players: [
-      { playerId: '1', playerNickname: 'Shira' },
-      { playerId: '2', playerNickname: 'Nadav' },
-      { playerId: '3', playerNickname: 'Odeya' },
+      {playerId: "1", playerNickname: "Shira"},
+      {playerId: "2", playerNickname: "Nadav"},
+      {playerId: "3", playerNickname: "Odeya"},
     ],
-    ready: ['1', '2', '3'],
+    ready: ["1", "2", "3"],
   },
   {
-    name: 'room2',
+    name: "room2",
     maxPlayers: 3,
-    roomId: '2',
-    players: [{ playerId: '1', playerNickname: 'Shira' }],
+    roomId: "2",
+    players: [{playerId: "1", playerNickname: "Shira"}],
     ready: [],
   },
 ];
 
-io.on('connection', (socket: Socket): void => {
-  socket.on('add_user', (data: { name: string }): void => {
+io.on("connection", (socket: Socket): void => {
+  socket.on("add_user", (data: {name: string}): void => {
     createUser(socket.id, data.name).then((res) => {
       if (res) {
-        const { socketId, nickname, _id } = res;
-        socket.emit('user_added', { socketId, nickname, id: _id });
+        const {socketId, nickname, _id} = res;
+        socket.emit("user_added", {socketId, nickname, id: _id});
       }
     });
   });
 
-  socket.on('choose_room', (): void => {
+  socket.on("choose_room", (): void => {
     getAllRooms().then((res) => {
-      socket.emit('get_rooms', res);
+      socket.emit("get_rooms", res);
     });
   });
 
   socket.on(
-    'joinroom',
+    "join_room",
     (data: {
       roomId: string;
-      user: { socketId: string; nickname: string; id: string };
+      user: {socketId: string; nickname: string; id: string};
     }): void => {
-      const { roomId, user } = data;
+      const {roomId, user} = data;
 
       const roomToJoin = rooms.find((r) => r.roomId == roomId);
       addPlayer(roomId, user.id, user.nickname).then((res) => {
         socket.join(roomId);
-        socket.emit('enter_queue', res);
+        socket.emit("enter_queue", res);
         if (!res) {
-          socket.emit('error', 'Room not found');
+          socket.emit("error", "Room not found");
           return;
         }
       });
     }
   );
 
-  socket.on('create_room', (newRoom): void => {
+  socket.on("create_room", (newRoom): void => {
     createRoom(newRoom).then((res) => {
       socket.join(newRoom.roomId);
-      socket.emit('enter_queue', res);
+      socket.emit("enter_queue", res);
     });
   });
 
-  socket.on('game_started', (data: any): void => {
+  socket.on("game_started", (data: any): void => {
     //Prepare the game data
     //emit.game_data(sending the game data)
   });
 
   socket.on(
-    'ask',
-    (data: { selectedCards: Array<string>; currentRoom: Room }): void => {
-      const { selectedCards, currentRoom } = data;
+    "ask",
+    (data: {selectedCards: Array<string>; currentRoom: Room}): void => {
+      const {selectedCards, currentRoom} = data;
       console.log(selectedCards);
-      socket.to(currentRoom.roomId).emit('asked_cards', selectedCards);
+      socket.to(currentRoom.roomId).emit("asked_cards", selectedCards);
     }
   );
 
-  socket.on('ready', (data: { user: User; currentRoom: Room }): void => {
-    socket.to(data.currentRoom.roomId).emit('player_ready', data.user.socketId);
+  socket.on("ready", (data: {user: User; currentRoom: Room}): void => {
+    socket.to(data.currentRoom.roomId).emit("player_ready", data.user.socketId);
 
     //if all players ready
   });
 
-  socket.on('start_game', (roomid: string): void => {
+  socket.on("start_game", (roomid: string): void => {
     getRoombyId(roomid).then((res) => {
       if (res) {
-        socket.emit('game_started', res);
-        socket.to(roomid).emit('game_started', res);
+        socket.emit("game_started", res);
+        socket.to(roomid).emit("game_started", res);
       }
     });
   });
 
-  //   socket.on('player_left', (data: { room: Room; user: User }): void => {
-  //     const { room, user } = data;
-  //     console.log(user.socketId);
-  //     const filteredRoom = room.players.filter(
-  //       (player) => player.playerId !== user.id
-  //     );
+  socket.on(
+    "player_left",
+    (data: {
+      room: Room;
+      user: {socketId: string; nickname: string; id: string};
+    }): void => {
+      const {room, user} = data;
+      console.log("USERRRRRR", user);
+      console.log("ROOOOOMM", room.players);
+      const filteredRoom = room.players.filter(
+        (player) => player.playerId !== user.id
+        );
+        console.log("FILTERRRRR",filteredRoom)
+        removePlayer(room.roomId, filteredRoom);
 
-  //     rooms[
-  //       rooms.findIndex((room) =>
-  //         room.players.find((p) => p.playerId === user.socketId)
-  //       )
-  //     ].players = filteredRoom;
+      // rooms[
+      //   rooms.findIndex((room) =>
+      //     room.players.find((p) => p.playerId === user.socketId)
+      //   )
+      // ].players = filteredRoom;
 
-  //     socket.to(room.roomId).emit('player_quit', `${user.nickname} left`);
-  //   });
+      socket.to(room.roomId).emit("player_quit", `${user.nickname} left`);
+    }
+  );
 });
 
 async function init(): Promise<void> {
   const connection = await mongoose
-    .set('strictQuery', false)
+    .set("strictQuery", false)
     .connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      dbName: 'cluedo',
+      dbName: "cluedo",
     });
   if (connection) {
-    console.log('Connected to DB');
+    console.log("Connected to DB");
     server.listen(process.env.PORT, () => {
       console.log(`Listening on ${process.env.PORT}`);
     });
