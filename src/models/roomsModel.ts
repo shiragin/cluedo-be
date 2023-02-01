@@ -26,7 +26,6 @@ export function addPlayerModel(
 }
 
 export async function updateRoomModel(newRoom: IRoom) {
-  console.log(newRoom);
   return Room.findOneAndUpdate({ roomId: newRoom.roomId }, newRoom, {
     new: true,
     runValidators: true,

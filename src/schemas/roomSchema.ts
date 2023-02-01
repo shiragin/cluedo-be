@@ -4,8 +4,18 @@ import validator from 'validator';
 export interface IRoom extends Document {
   roomId: string;
   name: string;
-  players: [{ playerId: string; playerNickname: string; role: string }];
+  players: [
+    { playerId: string; playerNickname: string; role: string; clues: Clue[] }
+  ];
   maxPlayers: number;
+}
+
+export interface Clue {
+  id: number;
+  name: string;
+  type: string;
+  color: string;
+  image: string;
 }
 
 const roomSchema: Schema = new Schema<IRoom>({
@@ -17,6 +27,15 @@ const roomSchema: Schema = new Schema<IRoom>({
       playerId: String,
       playerNickname: String,
       role: { type: String, enum: ['active', 'asked', 'inactive'] },
+      clues: [
+        {
+          id: Number,
+          type: String,
+          name: String,
+          color: String,
+          image: String,
+        },
+      ],
     },
   ],
 });

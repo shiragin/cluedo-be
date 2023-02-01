@@ -109,7 +109,6 @@ io.on('connection', (socket: Socket): void => {
     'ask',
     (data: { selectedCards: Array<string>; currentRoom: Room }): void => {
       const { selectedCards, currentRoom } = data;
-      console.log(selectedCards);
       socket.to(currentRoom.roomId).emit('asked_cards', selectedCards);
     }
   );
@@ -127,6 +126,10 @@ io.on('connection', (socket: Socket): void => {
         socket.to(roomid).emit('game_started', res);
       }
     });
+  });
+
+  socket.on('send_clues', (newGame: Room): void => {
+    console.log('Hi');
   });
 
   //   socket.on('player_left', (data: { room: Room; user: User }): void => {
