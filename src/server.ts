@@ -2,7 +2,6 @@ import { Socket, Server } from "socket.io";
 import express from "express";
 import http from "http";
 import { createUser } from "./controllers/usersController";
-import { createPlayer } from "./controllers/roomsController";
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = express();
@@ -28,6 +27,7 @@ interface Room {
     playerNickname: string;
   }[];
   maxPlayers: number;
+  ready: string[];
 }
 
 const rooms: Array<Room> = [
@@ -40,12 +40,14 @@ const rooms: Array<Room> = [
       { playerId: "2", playerNickname: "Nadav" },
       { playerId: "3", playerNickname: "Odeya" },
     ],
+    ready: ["1", "2", "3"],
   },
   {
     name: "room2",
     maxPlayers: 3,
     roomId: "2",
     players: [{ playerId: "1", playerNickname: "Shira" }],
+    ready: [],
   },
 ];
 
@@ -108,8 +110,15 @@ io.on("connection", (socket: Socket): void => {
     }
   );
 
-  socket.on("ready", (): void => {
-    console.log("Ready!");
+  socket.on("ready", (data: { user: User; currentRoom: Room }): void => {
+    socket.to(data.currentRoom.roomId).emit("player_ready", data.user.socketId);
+
+    //if all players ready
+  });
+
+  socket.on("start_game", (roomid: string): void => {
+    socket.emit("game_started");
+    socket.to(roomid).emit("game_started");
   });
 
   socket.on("player_left", (data: { room: Room; user: User }): void => {
