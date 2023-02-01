@@ -4,7 +4,7 @@ import { addPlayerModel, removePlayerModel } from '../models/roomsModel';
 export async function createRoom(NewRoomData: Object) {
   try {
     const newRoom = await createRoomModel(NewRoomData);
-    console.log(newRoom)
+    console.log('ROOM CREATED', newRoom);
     if (newRoom) return newRoom;
   } catch (error) {
     console.error(error);
@@ -37,6 +37,3 @@ export async function removePlayer(roomId: string, playerId: string) {
     console.error(error);
   }
 }
-
-
-  

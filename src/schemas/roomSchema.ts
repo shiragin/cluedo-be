@@ -4,17 +4,15 @@ import validator from 'validator';
 export interface IRoom extends Document {
   roomId: string;
   name: string;
-  maxPlayers: Number;
-  players: [
-   {type: mongoose.Types.ObjectId, ref:'players'}
-  ];
+  players: [{ playerId: string; playerNickname: string }];
+  maxPlayers: number;
 }
 
 const roomSchema: Schema = new Schema<IRoom>({
   roomId: { type: String, required: true, unique: true },
   name: { type: String, required: true, unique: true },
- maxPlayers: { type: Number, enum: [1, 2, 3, 4], require: true },
-  players: [{type: mongoose.Types.ObjectId, ref:'players'}],
+  maxPlayers: { type: Number, enum: [2, 3, 4], require: true },
+  players: [{ playerId: String, playerNickname: String }],
 });
 
 const Room = model<IRoom>('room', roomSchema);
