@@ -2,7 +2,7 @@ import { Socket, Server } from "socket.io";
 import express from "express";
 import http from "http";
 import { createUser } from "./controllers/usersController";
-import { createPlayer } from "./controllers/roomsController";
+
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = express();
