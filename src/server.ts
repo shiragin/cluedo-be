@@ -2,6 +2,7 @@ import { Socket, Server } from "socket.io";
 import express from "express";
 import http from "http";
 import { createUser } from "./controllers/usersController";
+import { createRoom, getAllRooms } from "./controllers/roomsController";
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = express();
@@ -62,7 +63,9 @@ io.on("connection", (socket: Socket): void => {
   });
 
   socket.on("choose_room", (): void => {
-    socket.emit("get_rooms", rooms);
+    getAllRooms().then((res) => {
+      socket.emit("get_rooms", res);
+    });
   });
 
   socket.on("join_room", ({ roomId, user }): void => {
@@ -90,10 +93,12 @@ io.on("connection", (socket: Socket): void => {
   });
 
   socket.on("create_room", (room: Room, user): void => {
-    console.log(room);
-    rooms.push(room);
-    socket.join(room.roomId);
-    socket.emit("enter_queue", room);
+    createRoom(room).then((res) => {
+      socket.join(room.roomId);
+      socket.emit("enter_queue", res);
+    });
+    // console.log(room);
+    // rooms.push(room);
   });
 
   socket.on("game_started", (data: any): void => {
