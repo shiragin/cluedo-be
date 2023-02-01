@@ -2,7 +2,7 @@ import { Socket, Server } from "socket.io";
 import express from "express";
 import http from "http";
 import { createUser } from "./controllers/usersController";
-import { createRoom, getAllRooms } from "./controllers/roomsController";
+import { addPlayer, createRoom, getAllRooms } from "./controllers/roomsController";
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = express();
@@ -70,36 +70,49 @@ io.on("connection", (socket: Socket): void => {
 
   socket.on("join_room", ({ roomId, user }): void => {
     console.log(roomId);
-    const roomToJoin = rooms.find((r) => r.roomId == roomId);
-    if (!roomToJoin) {
-      socket.emit("error", "Room not found");
-      return;
-    }
-    if (roomToJoin?.players.length < roomToJoin?.maxPlayers) {
-      socket.join(roomId);
-      roomToJoin.players.push({
-        playerId: user.socketId,
-        playerNickname: user.nickname,
-      });
-      socket
-        .to(roomToJoin.roomId)
-        .emit("player_joined", `${user.nickname} joined`);
-      console.log(roomToJoin);
-      console.log("Joined room number", roomId);
-      // socket.emit('get_rooms', rooms);
-      socket.emit("enter_queue", roomToJoin);
-    }
-    socket.emit("error", "Room is full");
+    // const roomToJoin = rooms.find((r) => r.roomId == roomId);
+    addPlayer(roomId, user._id).then((res) => {
+      console.log(res)
+      if(!res){
+        socket.emit("error", "Room not found");
+        return;
+      }
+      // if (res?.players.length < res?.maxPlayers) {
+      //   socket.join(roomId);
+      //   res.players.push({
+      //     playerId: user.socketId,
+      //     playerNickname: user.nickname,
+      //   });
+      //   socket
+      //     .to(res.roomId)
+      //     .emit("player_joined", `${user.nickname} joined`);
+      //   console.log(roomToJoin);
+      //   console.log("Joined room number", roomId);
+      //   // socket.emit('get_rooms', rooms);
+      //   socket.emit("enter_queue", roomToJoin);
+      // }
+      // socket.emit("error", "Room is full");
+      // ))
+      
+    // if (!roomToJoin) {
+    //   socket.emit("error", "Room not found");
+    //   return;
+    // }
   });
 
-  socket.on("create_room", (room: Room, user): void => {
+  socket.on("create_room", (data: {room: Room, userId: string}): void => {
+    console.log("HERE")
+    const {room, userId} = data;
     createRoom(room).then((res) => {
+
       socket.join(room.roomId);
       socket.emit("enter_queue", res);
     });
     // console.log(room);
+  
     // rooms.push(room);
   });
+
 
   socket.on("game_started", (data: any): void => {
     //Prepare the game data
@@ -141,7 +154,7 @@ io.on("connection", (socket: Socket): void => {
 
     socket.to(room.roomId).emit("player_quit", `${user.nickname} left`);
   });
-});
+})});
 
 async function init(): Promise<void> {
   const connection = await mongoose
@@ -158,4 +171,5 @@ async function init(): Promise<void> {
     });
   }
 }
+
 init();
