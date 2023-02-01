@@ -1,4 +1,4 @@
-import Room from '../schemas/roomSchema';
+import Room, { IRoom } from '../schemas/roomSchema';
 
 export function createRoomModel(NewRoomData: Object) {
   return Room.create(NewRoomData);
@@ -15,7 +15,6 @@ export function addPlayerModel(
   playerId: string,
   playerNickname: string
 ) {
-  console.log(roomId);
   return Room.findOneAndUpdate(
     { roomId: roomId },
     { $push: { players: { playerId, playerNickname } } },
@@ -24,6 +23,14 @@ export function addPlayerModel(
       runValidators: true,
     }
   );
+}
+
+export async function updateRoomModel(newRoom: IRoom) {
+  console.log(newRoom);
+  return Room.findOneAndUpdate({ roomId: newRoom.roomId }, newRoom, {
+    new: true,
+    runValidators: true,
+  });
 }
 
 export function removePlayerModel(roomId: string, playerId: string) {

@@ -1,15 +1,16 @@
+import Room, { IRoom } from '../schemas/roomSchema';
 import {
   createRoomModel,
   getAllRoomsModel,
   getRoombyIdModel,
   addPlayerModel,
   removePlayerModel,
+  updateRoomModel,
 } from '../models/roomsModel';
 
 export async function createRoom(NewRoomData: Object) {
   try {
     const newRoom = await createRoomModel(NewRoomData);
-    console.log('ROOM CREATED', newRoom);
     if (newRoom) return newRoom;
   } catch (error) {
     console.error(error);
@@ -50,8 +51,16 @@ export async function removePlayer(roomId: string, playerId: string) {
 export async function getRoombyId(roomid: string) {
   try {
     const room = await getRoombyIdModel(roomid);
-    console.log(room);
-    if (room) return room;
+    if (!room) {
+      return;
+    }
+    room!.players.map((player, index) => {
+      if (index === 0) player.role = 'active';
+      else if (index === 1) player.role = 'asked';
+      else player.role = 'inactive';
+    });
+    const updatedRoom = await updateRoomModel(room);
+    return updatedRoom;
   } catch (err) {
     console.error(err);
   }

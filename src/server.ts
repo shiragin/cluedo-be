@@ -80,11 +80,9 @@ io.on('connection', (socket: Socket): void => {
       user: { socketId: string; nickname: string; id: string };
     }): void => {
       const { roomId, user } = data;
-      console.log('Room', data);
-      console.log('User', user);
+
       const roomToJoin = rooms.find((r) => r.roomId == roomId);
       addPlayer(roomId, user.id, user.nickname).then((res) => {
-        console.log('ppp', res);
         socket.join(roomId);
         socket.emit('enter_queue', res);
         if (!res) {
@@ -96,8 +94,6 @@ io.on('connection', (socket: Socket): void => {
   );
 
   socket.on('create_room', (newRoom): void => {
-    console.log('HERE');
-    console.log(newRoom);
     createRoom(newRoom).then((res) => {
       socket.join(newRoom.roomId);
       socket.emit('enter_queue', res);
@@ -125,7 +121,6 @@ io.on('connection', (socket: Socket): void => {
   });
 
   socket.on('start_game', (roomid: string): void => {
-    console.log(roomid);
     getRoombyId(roomid).then((res) => {
       if (res) {
         socket.emit('game_started', res);
