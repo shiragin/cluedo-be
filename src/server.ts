@@ -7,7 +7,7 @@ import {
   createRoom,
   getAllRooms,
   getRoombyId,
-  removePlayer
+  removePlayer,
 } from "./controllers/roomsController";
 require("dotenv").config();
 const mongoose = require("mongoose");
@@ -81,14 +81,18 @@ io.on("connection", (socket: Socket): void => {
       user: {socketId: string; nickname: string; id: string};
     }): void => {
       const {roomId, user} = data;
-
-      const roomToJoin = rooms.find((r) => r.roomId == roomId);
-      addPlayer(roomId, user.id, user.nickname).then((res) => {
-        socket.join(roomId);
-        socket.emit("enter_queue", res);
-        if (!res) {
-          socket.emit("error", "Room not found");
-          return;
+      getRoombyId(roomId).then((room) => {
+        if (room!.players.length < room!.maxPlayers) {
+          addPlayer(roomId, user.id, user.nickname).then((res) => {
+            socket.join(roomId);
+            socket.emit("enter_queue", res);
+            if (!res) {
+              socket.emit("error", "Room not found");
+              return;
+            }
+          });
+        } else {
+          socket.emit("error", "Room is full");
         }
       });
     }
@@ -141,9 +145,9 @@ io.on("connection", (socket: Socket): void => {
       console.log("ROOOOOMM", room.players);
       const filteredRoom = room.players.filter(
         (player) => player.playerId !== user.id
-        );
-        console.log("FILTERRRRR",filteredRoom)
-        removePlayer(room.roomId, filteredRoom);
+      );
+      console.log("FILTERRRRR", filteredRoom);
+      removePlayer(room.roomId, filteredRoom);
 
       // rooms[
       //   rooms.findIndex((room) =>
