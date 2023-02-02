@@ -86,9 +86,9 @@ io.on('connection', (socket: Socket): void => {
 
   socket.on(
     'ask',
-    (data: { selectedCards: Array<string>; currentRoom: IRoom }): void => {
-      const { selectedCards, currentRoom } = data;
-      socket.to(currentRoom.roomId).emit('asked_cards', selectedCards);
+    (data: { selectedCards: Array<string>; game: IRoom }): void => {
+      const { selectedCards, game } = data;
+      socket.to(game.roomId).emit('asked_cards', selectedCards);
     }
   );
 
