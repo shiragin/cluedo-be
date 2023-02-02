@@ -90,6 +90,7 @@ io.on('connection', (socket: Socket): void => {
   });
 
   socket.on('send_clues', (newGame: IRoom): void => {
+    console.log('WOW', newGame);
     updateRoom(newGame).then((res) => {
       if (res) {
         socket.emit('clues_sent', res);
