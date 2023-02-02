@@ -1,4 +1,4 @@
-import Room, { IRoom } from "../schemas/roomSchema";
+import Room, { IRoom } from '../schemas/roomSchema';
 import {
   createRoomModel,
   getAllRoomsModel,
@@ -6,7 +6,7 @@ import {
   addPlayerModel,
   removePlayerModel,
   updateRoomModel,
-} from "../models/roomsModel";
+} from '../models/roomsModel';
 
 export async function createRoom(NewRoomData: Object) {
   try {
@@ -42,7 +42,6 @@ export async function addPlayer(
 export async function updateRoom(newRoom: IRoom) {
   try {
     const newGame = await updateRoomModel(newRoom);
-    console.log(newGame);
     if (newGame) return newGame;
   } catch (err: any) {
     console.log(err.message);
@@ -52,7 +51,6 @@ export async function updateRoom(newRoom: IRoom) {
 export async function removePlayer(roomId: string, filteredRoom: object[]) {
   try {
     const updatedRoom = await removePlayerModel(roomId, filteredRoom);
-    console.log(updatedRoom);
     if (updatedRoom) return updatedRoom;
   } catch (error) {
     console.error(error);
@@ -66,9 +64,9 @@ export async function getRoombyId(roomid: string) {
       return;
     }
     room!.players.map((player, index) => {
-      if (index === 0) player.role = "active";
-      else if (index === 1) player.role = "asked";
-      else player.role = "inactive";
+      if (index === 0) player.role = 'active';
+      else if (index === 1) player.role = 'asked';
+      else player.role = 'inactive';
     });
     const updatedRoom = await updateRoomModel(room);
     return updatedRoom;

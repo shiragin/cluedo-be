@@ -1,7 +1,7 @@
 import { Socket, Server } from 'socket.io';
 import express from 'express';
 import http from 'http';
-import { IRoom } from './schemas/roomSchema';
+import { Clue, IRoom } from './schemas/roomSchema';
 import { createUser } from './controllers/usersController';
 import {
   addPlayer,
@@ -12,6 +12,7 @@ import {
   updateRoom,
   nextRound,
 } from './controllers/roomsController';
+import Player from './schemas/playerSchemas';
 require('dotenv').config();
 const mongoose = require('mongoose');
 const app = express();
@@ -97,9 +98,21 @@ io.on('connection', (socket: Socket): void => {
     });
   });
 
-  socket.on('game_started', (data: any): void => {
-    //Prepare the game data
-    //emit.game_data(sending the game data)
+  socket.on('pass_turn', (game: IRoom): void => {
+    console.log('whahahahaah');
+    game.players.map((player) => {
+      if (player.role === 'active') {
+        player.role = 'asked';
+      } else {
+        player.role = 'active';
+      }
+    });
+    updateRoom(game).then((res) => {
+      if (res) {
+        socket.emit('turn_passed', res);
+        socket.to(game.roomId).emit('turn_passed', res);
+      }
+    });
   });
 
   socket.on(
@@ -119,8 +132,10 @@ io.on('connection', (socket: Socket): void => {
   socket.on('start_game', (roomid: string): void => {
     getRoombyId(roomid).then((res) => {
       if (res) {
-        socket.emit('game_started', res);
-        socket.to(roomid).emit('game_started', res);
+        socket.emit('game_started', { room: res, players: res.players });
+        socket
+          .to(roomid)
+          .emit('game_started', { room: res, players: res.players });
       }
     });
   });
@@ -141,17 +156,24 @@ io.on('connection', (socket: Socket): void => {
     }
   );
 
-  socket.on('replied', (answer: { card: string; currentRoom: IRoom }) => {
-    const { card, currentRoom } = answer;
-    socket.to(currentRoom.roomId).emit('Show card', card);
+  socket.on('send_reply', (data: { game: IRoom; answer: Clue }) => {
+    const { game, answer } = data;
+    socket.to(game.roomId).emit('show_card', answer);
   });
 
-  socket.on('next_round', (data: { room: IRoom }) => {
-    const { room } = data;
-    const turn = nextRound(room.roomId).then((res) => {
-      console.log(res);
-    });
+  socket.on('accuse', (data: { winResult: boolean; game: IRoom }) => {
+    const { game, winResult } = data;
+    console.log(winResult);
+    socket.emit('accuse_happened', winResult);
+    socket.to(game.roomId).emit('accuse_happened', winResult);
   });
+
+  // socket.on('next_round', (data: { room: IRoom }) => {
+  //   const { room } = data;
+  //   const turn = nextRound(room.roomId).then((res) => {
+  //     console.log(res);
+  //   });
+  // });
 });
 
 async function init(): Promise<void> {
