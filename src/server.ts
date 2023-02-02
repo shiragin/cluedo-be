@@ -1,8 +1,8 @@
-import { Socket, Server } from "socket.io";
-import express from "express";
-import http from "http";
-import { IRoom } from "./schemas/roomSchema";
-import { createUser } from "./controllers/usersController";
+import { Socket, Server } from 'socket.io';
+import express from 'express';
+import http from 'http';
+import { IRoom } from './schemas/roomSchema';
+import { createUser } from './controllers/usersController';
 import {
   addPlayer,
   createRoom,
@@ -11,15 +11,15 @@ import {
   removePlayer,
   updateRoom,
   nextRound,
-} from "./controllers/roomsController";
-require("dotenv").config();
-const mongoose = require("mongoose");
+} from './controllers/roomsController';
+require('dotenv').config();
+const mongoose = require('mongoose');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"],
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
   },
 });
 
@@ -40,24 +40,24 @@ interface User {
 //   ready: string[];
 // }
 
-io.on("connection", (socket: Socket): void => {
-  socket.on("add_user", (data: { name: string }): void => {
+io.on('connection', (socket: Socket): void => {
+  socket.on('add_user', (data: { name: string }): void => {
     createUser(socket.id, data.name).then((res) => {
       if (res) {
         const { socketId, nickname, _id } = res;
-        socket.emit("user_added", { socketId, nickname, id: _id });
+        socket.emit('user_added', { socketId, nickname, id: _id });
       }
     });
   });
 
-  socket.on("choose_room", (): void => {
+  socket.on('choose_room', (): void => {
     getAllRooms().then((res) => {
-      socket.emit("get_rooms", res);
+      socket.emit('get_rooms', res);
     });
   });
 
   socket.on(
-    "joinroom",
+    'joinroom',
     (data: {
       roomId: string;
       user: { socketId: string; nickname: string; id: string };
@@ -67,57 +67,66 @@ io.on("connection", (socket: Socket): void => {
         if (room!.players.length < room!.maxPlayers) {
           addPlayer(roomId, user.id, user.nickname).then((res) => {
             socket.join(roomId);
-            socket.to(roomId).emit("player_joined", res);
-            socket.emit("enter_queue", res);
+            socket.to(roomId).emit('player_joined', res);
+            socket.emit('enter_queue', res);
             if (!res) {
-              socket.emit("error", "Room not found");
+              socket.emit('error', 'Room not found');
               return;
             }
           });
         } else {
-          socket.emit("error", "Room is full");
+          socket.emit('error', 'Room is full');
         }
       });
     }
   );
 
-  socket.on("create_room", (newRoom): void => {
+  socket.on('create_room', (newRoom): void => {
     createRoom(newRoom).then((res) => {
       socket.join(newRoom.roomId);
-      socket.emit("enter_queue", res);
+      socket.emit('enter_queue', res);
     });
   });
 
-  socket.on("game_started", (data: any): void => {
+  socket.on('send_clues', (newGame: IRoom): void => {
+    updateRoom(newGame).then((res) => {
+      if (res) {
+        socket.emit('clues_sent', res);
+        socket.to(newGame.roomId).emit('clues_sent', res);
+      }
+    });
+  });
+
+  socket.on('game_started', (data: any): void => {
     //Prepare the game data
     //emit.game_data(sending the game data)
   });
 
   socket.on(
-    "ask",
-    (data: { selectedCards: Array<string>; currentRoom: IRoom }): void => {
-      const { selectedCards, currentRoom } = data;
-      socket.to(currentRoom.roomId).emit("asked_cards", selectedCards);
+    'ask',
+    (data: { selectedCards: Array<string>; game: IRoom }): void => {
+      const { selectedCards, game } = data;
+      socket.to(game.roomId).emit('asked_cards', selectedCards);
     }
   );
 
-  socket.on("ready", (data: { user: User; currentRoom: IRoom }): void => {
-    socket.to(data.currentRoom.roomId).emit("player_ready", data.user.socketId);
+  socket.on('ready', (data: { user: User; currentRoom: IRoom }): void => {
+    socket.to(data.currentRoom.roomId).emit('player_ready', data.user.socketId);
 
     //if all players ready
   });
 
-  socket.on("start_game", (roomid: string): void => {
+  socket.on('start_game', (roomid: string): void => {
     getRoombyId(roomid).then((res) => {
       if (res) {
-        socket.emit("game_started", res);
-        socket.to(roomid).emit("game_started", res);
+        socket.emit('game_started', res);
+        socket.to(roomid).emit('game_started', res);
       }
     });
   });
 
   socket.on(
-    "player_left",
+    'player_left',
     (data: {
       room: IRoom;
       user: { socketId: string; nickname: string; id: string };
@@ -127,17 +136,17 @@ io.on("connection", (socket: Socket): void => {
         (player) => player.playerId !== user.id
       );
       removePlayer(room.roomId, filteredRoom).then((res) => {
-        socket.to(room.roomId).emit("player_quit", res);
+        socket.to(room.roomId).emit('player_quit', res);
       });
     }
   );
 
-  socket.on("replied", (answer: { card: string; currentRoom: IRoom }) => {
+  socket.on('replied', (answer: { card: string; currentRoom: IRoom }) => {
     const { card, currentRoom } = answer;
-    socket.to(currentRoom.roomId).emit("Show card", card);
+    socket.to(currentRoom.roomId).emit('Show card', card);
   });
 
-  socket.on("next_round", (data: { room: IRoom }) => {
+  socket.on('next_round', (data: { room: IRoom }) => {
     const { room } = data;
     const turn = nextRound(room.roomId).then((res) => {
       console.log(res);
@@ -147,14 +156,14 @@ io.on("connection", (socket: Socket): void => {
 
 async function init(): Promise<void> {
   const connection = await mongoose
-    .set("strictQuery", false)
+    .set('strictQuery', false)
     .connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      dbName: "cluedo",
+      dbName: 'cluedo',
     });
   if (connection) {
-    console.log("Connected to DB");
+    console.log('Connected to DB');
     server.listen(process.env.PORT, () => {
       console.log(`Listening on ${process.env.PORT}`);
     });
